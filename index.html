@@ -1,788 +1,160 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OmniDivination - Global Wisdom</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- Babel for in-browser JSX/TS compilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni Divination - 全知占卜</title>
     
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-      body {
-        font-family: 'Lato', sans-serif;
-        background-color: #0f172a;
-        color: #e2e8f0;
-      }
-      h1, h2, h3, h4, h5, h6, .font-display {
-        font-family: 'Cinzel', serif;
-      }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1e293b; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #475569; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; 
-      }
-      
-      .mystic-gradient {
-        background: radial-gradient(circle at center, #312e81 0%, #0f172a 100%);
-      }
-      
-      .animate-fade-in {
-        animation: fadeIn 1s ease-out;
-      }
-      .animate-fade-in-up {
-        animation: fadeInUp 0.8s ease-out backwards;
-      }
-      
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .perspective-1000 {
-        perspective: 1000px;
-      }
+        /* 自定义一些神秘的动画和背景 */
+        body {
+            background-color: #0f172a; /* 深蓝背景 */
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .mystic-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .mystic-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(167, 139, 250, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(167, 139, 250, 0.3);
+        }
+        .fade-in {
+            animation: fadeIn 1s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
+</head>
+<body>
 
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
-  }
-}
-</script>
-  </head>
-  <body>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module" data-presets="typescript,react">
-      import React, { useState, useEffect } from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { GoogleGenAI, Type } from "@google/genai";
+    <script type="text/babel">
+        const { useState } = React;
 
-      // --- TYPES ---
-      
-      enum DivinationType {
-        TAROT = 'TAROT',
-        ICHING = 'ICHING',
-        ASTROLOGY = 'ASTROLOGY',
-        RUNES = 'RUNES'
-      }
+        // --- 占卜主程序 ---
+        function App() {
+            const [mode, setMode] = useState('home'); // home, tarot, iching
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
 
-      interface DivinationMethod {
-        id: DivinationType;
-        name: string;
-        description: string;
-        icon: string;
-        color: string;
-      }
+            // 模拟塔罗牌数据
+            const tarotCards = [
+                { name: "愚者 (The Fool)", meaning: "新的开始，冒险，天真，潜力无限。" },
+                { name: "魔术师 (The Magician)", meaning: "创造力，技能，意志力，自信。" },
+                { name: "女祭司 (The High Priestess)", meaning: "直觉，潜意识，神秘，智慧。" },
+                { name: "命运之轮 (Wheel of Fortune)", meaning: "命运的转折，变化，好运，循环。" },
+                { name: "太阳 (The Sun)", meaning: "快乐，成功，积极，活力。" },
+                { name: "月亮 (The Moon)", meaning: "幻觉，恐惧，潜意识，不安。" },
+                { name: "星星 (The Star)", meaning: "希望，灵感，宁静，精神力量。" }
+            ];
 
-      interface DivinationResult {
-        title: string;
-        summary: string;
-        details: string;
-        guidance: string;
-        luckyElements?: string[];
-      }
+            // 占卜逻辑
+            const performDivination = (type) => {
+                setLoading(true);
+                setResult(null);
+                
+                // 模拟神秘的计算过程 (等待2秒)
+                setTimeout(() => {
+                    if (type === 'tarot') {
+                        const randomCard = tarotCards[Math.floor(Math.random() * tarotCards.length)];
+                        setResult({ title: randomCard.name, desc: randomCard.meaning, icon: "🎴" });
+                    } else if (type === 'iching') {
+                        setResult({ title: "谦卦 (第15卦)", desc: "亨通，君子有终。保持谦虚将带来好运。", icon: "☯️" });
+                    }
+                    setLoading(false);
+                }, 2000);
+            };
 
-      interface CardSelection {
-        card: string;
-        isUpright: boolean;
-        position: 'Past' | 'Present' | 'Future';
-      }
+            const reset = () => {
+                setMode('home');
+                setResult(null);
+            };
 
-      // --- CONSTANTS ---
+            // --- 界面 1: 首页 ---
+            if (mode === 'home') {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center fade-in">
+                        <div className="mb-8 text-6xl">🔮</div>
+                        <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
+                            Omni Divination
+                        </h1>
+                        <p className="text-slate-400 mb-12 max-w-md text-lg">
+                            探索古老的智慧，寻求内心的指引。<br/>请选择一种方式开启您的旅程。
+                        </p >
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+                            <button 
+                                onClick={() => { setMode('tarot'); performDivination('tarot'); }}
+                                className="mystic-card p-8 rounded-2xl cursor-pointer group"
+                            >
+                                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🎴</div>
+                                <h3 className="text-2xl font-bold mb-2">塔罗牌</h3>
+                                <p className="text-slate-400">西方神秘学智慧，揭示当下的能量。</p >
+                            </button>
 
-      const METHODS: DivinationMethod[] = [
-        {
-          id: DivinationType.TAROT,
-          name: "塔罗牌 (Tarot)",
-          description: "Western mysticism revealing past, present, and future through 78 arcana.",
-          icon: "M4.5 3.75a3 3 0 00-3 3v9a3 3 0 003 3h9a3 3 0 003-3v-9a3 3 0 00-3-3h-9zM19.5 6a3 3 0 00-3-3h-9c-.36 0-.705.053-1.03.15A4.49 4.49 0 0112 6.75v10.5a4.49 4.49 0 01-1.53 3.39c.325.097.67.15 1.03.15h9a3 3 0 003-3v-9a3 3 0 00-3-3z",
-          color: "bg-purple-600"
-        },
-        {
-          id: DivinationType.ICHING,
-          name: "易经 (I Ching)",
-          description: "Ancient Chinese wisdom of changes using hexagrams to understand the flow of life.",
-          icon: "M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 1.5a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V4.5A.75.75 0 0112 3.75zM12 8.25a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 4.5a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5a.75.75 0 01.75-.75zm0 4.5a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5a.75.75 0 01.75-.75z",
-          color: "bg-amber-600"
-        },
-        {
-          id: DivinationType.ASTROLOGY,
-          name: "星盘运势 (Astrology)",
-          description: "Celestial alignment analysis based on birth charts and planetary transits.",
-          icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z",
-          color: "bg-indigo-600"
-        },
-        {
-          id: DivinationType.RUNES,
-          name: "卢恩符文 (Runes)",
-          description: "Nordic symbols of Odin offering protection and insight into destiny.",
-          icon: "M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z",
-          color: "bg-stone-600"
-        }
-      ];
-
-      const TAROT_DECK = [
-        "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", 
-        "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit", 
-        "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance", 
-        "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World",
-        "Ace of Wands", "Two of Wands", "Three of Wands", "Four of Wands", "Five of Wands", "Six of Wands", "Seven of Wands", "Eight of Wands", "Nine of Wands", "Ten of Wands", "Page of Wands", "Knight of Wands", "Queen of Wands", "King of Wands",
-        "Ace of Cups", "Two of Cups", "Three of Cups", "Four of Cups", "Five of Cups", "Six of Cups", "Seven of Cups", "Eight of Cups", "Nine of Cups", "Ten of Cups", "Page of Cups", "Knight of Cups", "Queen of Cups", "King of Cups",
-        "Ace of Swords", "Two of Swords", "Three of Swords", "Four of Swords", "Five of Swords", "Six of Swords", "Seven of Swords", "Eight of Swords", "Nine of Swords", "Ten of Swords", "Page of Swords", "Knight of Swords", "Queen of Swords", "King of Swords",
-        "Ace of Pentacles", "Two of Pentacles", "Three of Pentacles", "Four of Pentacles", "Five of Pentacles", "Six of Pentacles", "Seven of Pentacles", "Eight of Pentacles", "Nine of Pentacles", "Ten of Pentacles", "Page of Pentacles", "Knight of Pentacles", "Queen of Pentacles", "King of Pentacles"
-      ];
-
-      const RUNE_NAMES = [
-        "Fehu (Wealth)", "Uruz (Strength)", "Thurisaz (Gateway)", "Ansuz (Signals)", 
-        "Raido (Journey)", "Kenaz (Opening)", "Gebo (Partnership)", "Wunjo (Joy)", 
-        "Hagalaz (Disruption)", "Nauthiz (Constraint)", "Isa (Standstill)", "Jera (Harvest)",
-        "Eihwaz (Defense)", "Perth (Initiation)", "Algiz (Protection)", "Sowelu (Wholeness)",
-        "Teiwaz (Warrior)", "Berkana (Growth)", "Ehwaz (Movement)", "Mannaz (Self)",
-        "Laguz (Flow)", "Inguz (Fertility)", "Othila (Separation)", "Dagaz (Breakthrough)", "The Blank Rune (Odin)"
-      ];
-
-      // --- GEMINI SERVICE ---
-
-      // Safe Access to API Key without crashing if process is undefined
-      const getEnvApiKey = () => {
-        try {
-          // @ts-ignore
-          if (typeof process !== 'undefined' && process && process.env) {
-            // @ts-ignore
-            return process.env.API_KEY || '';
-          }
-        } catch (e) {
-          // Ignore ReferenceErrors in strict environments
-        }
-        return '';
-      };
-      
-      const apiKey = getEnvApiKey();
-      
-      const ai = new GoogleGenAI({ apiKey: apiKey || 'YOUR_API_KEY_HERE' });
-
-      const DIVINATION_SYSTEM_PROMPT = `
-      You are a Grand Master Oracle with deep knowledge of Tarot, I Ching, Western Astrology, and Norse Runes.
-      Your goal is to provide profound, insightful, and empathetic readings. 
-      Avoid generic "cold reading" phrases. Instead, interpret the specific symbols provided in the prompt deeply.
-      Be mystical but grounded. Offer actionable psychological or spiritual advice.
-      Do not predict death, precise lottery numbers, or diagnosing medical conditions.
-      Always respond in the specific JSON schema requested.
-      `;
-
-      const responseSchema = {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING, description: "A poetic title for the reading" },
-          summary: { type: Type.STRING, description: "A one-sentence summary of the fortune" },
-          details: { type: Type.STRING, description: "The detailed interpretation in Markdown format. Use bolding for emphasis." },
-          guidance: { type: Type.STRING, description: "Actionable advice for the user" },
-          luckyElements: { 
-            type: Type.ARRAY, 
-            items: { type: Type.STRING },
-            description: "3-4 lucky items, colors, or numbers related to the reading" 
-          }
-        },
-        required: ["title", "summary", "details", "guidance"]
-      };
-
-      async function getDivinationReading(type, context) {
-        if (!apiKey) {
-           console.warn("No API Key found. Returning mock data.");
-           return new Promise(resolve => setTimeout(() => resolve({
-              title: "The Silent Oracle",
-              summary: "The mists are thick; ensure your API Key is set.",
-              details: "The connection to the ethereal plane requires a key. Without it, the symbols remain veiled.\n\n(Note: To use the AI features, you need a valid API_KEY in your environment variables).",
-              guidance: "Configure your environment variables.",
-              luckyElements: ["Key", "Code"]
-           }), 2000));
-        }
-
-        let prompt = "";
-        
-        switch (type) {
-          case DivinationType.TAROT:
-            prompt = `Perform a 3-card Tarot reading (Past, Present, Future). The user drew these cards: ${context}. Interpret them together.`;
-            break;
-          case DivinationType.ICHING:
-            prompt = `Perform an I Ching reading. The user tossed coins resulting in this hexagram configuration: ${context}. Identify the Hexagram, its judgment, and image. Explain the changing lines if any.`;
-            break;
-          case DivinationType.ASTROLOGY:
-            prompt = `Perform a quick astrological forecast. User details: ${context}. Focus on the current planetary transits affecting them today.`;
-            break;
-          case DivinationType.RUNES:
-            prompt = `Perform a single Rune casting reading. The rune drawn is: ${context}. Explain its ancient meaning and relevance to the user's current path.`;
-            break;
-        }
-
-        try {
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-              systemInstruction: DIVINATION_SYSTEM_PROMPT,
-              responseMimeType: "application/json",
-              responseSchema: responseSchema,
+                            <button 
+                                onClick={() => { setMode('iching'); performDivination('iching'); }}
+                                className="mystic-card p-8 rounded-2xl cursor-pointer group"
+                            >
+                                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">☯️</div>
+                                <h3 className="text-2xl font-bold mb-2">易经</h3>
+                                <p className="text-slate-400">东方变化哲学，指引行动的方向。</p >
+                            </button>
+                        </div>
+                    </div>
+                );
             }
-          });
 
-          const text = response.text;
-          if (!text) throw new Error("No response from Oracle");
-          
-          return JSON.parse(text);
+            // --- 界面 2: 占卜中/结果页 ---
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 fade-in">
+                    <button onClick={reset} className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2">
+                        <span>⬅️</span> 返回首页
+                    </button>
 
-        } catch (error) {
-          console.error("Divination Error:", error);
-          return {
-            title: "The Mists Obscure the Vision",
-            summary: "Connection to the ether was interrupted.",
-            details: "Please try again later. The cosmic energies are currently turbulent.",
-            guidance: "Patience is a virtue.",
-            luckyElements: ["Silence", "Breath"]
-          };
-        }
-      }
-
-      // --- COMPONENTS ---
-
-      const Button = ({ 
-        children, 
-        variant = 'primary', 
-        isLoading = false,
-        className = '',
-        ...props 
-      }) => {
-        const baseStyle = "px-6 py-3 rounded-lg font-display tracking-wider transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2";
-        
-        const variants = {
-          primary: "bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-white shadow-lg shadow-amber-900/50 border border-amber-400/30",
-          secondary: "bg-slate-800 hover:bg-slate-700 text-amber-100 border border-slate-600",
-          outline: "border-2 border-amber-500/50 text-amber-500 hover:bg-amber-500/10 hover:border-amber-400"
-        };
-
-        return (
-          <button 
-            className={`${baseStyle} ${variants[variant]} ${className}`}
-            disabled={isLoading || props.disabled}
-            {...props}
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Divining...
-              </>
-            ) : children}
-          </button>
-        );
-      };
-
-      const ResultCard = ({ result, onClose }) => {
-        return (
-          <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-slate-900 border border-amber-500/30 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-amber-900/40 relative">
-              <button 
-                onClick={onClose}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <div className="p-8">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-display text-amber-400 mb-2">{result.title}</h2>
-                  <p className="text-slate-300 italic text-lg">"{result.summary}"</p>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
-                    <h3 className="text-amber-500 font-bold mb-3 uppercase tracking-wider text-sm">The Oracle Speaks</h3>
-                    <div className="prose prose-invert prose-amber max-w-none text-slate-200 leading-relaxed whitespace-pre-wrap">
-                      {result.details}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-indigo-900/20 p-5 rounded-xl border border-indigo-500/20">
-                      <h4 className="text-indigo-300 font-bold mb-2 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
-                        </svg>
-                        Guidance
-                      </h4>
-                      <p className="text-sm text-indigo-100">{result.guidance}</p>
-                    </div>
-
-                    {result.luckyElements && (
-                      <div className="bg-amber-900/20 p-5 rounded-xl border border-amber-500/20">
-                        <h4 className="text-amber-300 font-bold mb-2 flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
-                          </svg>
-                          Lucky Signs
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {result.luckyElements.map((el, i) => (
-                            <span key={i} className="px-2 py-1 bg-amber-500/20 text-amber-200 text-xs rounded-full border border-amber-500/30">
-                              {el}
-                            </span>
-                          ))}
+                    {loading ? (
+                        <div className="text-center">
+                            <div className="text-6xl animate-bounce mb-6">🔮</div>
+                            <h2 className="text-2xl font-light tracking-widest animate-pulse">
+                                连接宇宙能量中...
+                            </h2>
                         </div>
-                      </div>
+                    ) : (
+                        <div className="mystic-card max-w-lg w-full p-8 rounded-3xl text-center border-t-4 border-purple-500 shadow-2xl">
+                            <div className="text-6xl mb-6">{result.icon}</div>
+                            <h2 className="text-3xl font-bold mb-4 text-purple-300">{result.title}</h2>
+                            <div className="h-px w-24 bg-purple-500/50 mx-auto mb-6"></div>
+                            <p className="text-xl text-slate-200 leading-relaxed mb-8">
+                                {result.desc}
+                            </p >
+                            <button 
+                                onClick={reset}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg hover:shadow-purple-500/30"
+                            >
+                                再次占卜
+                            </button>
+                        </div>
                     )}
-                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        );
-      };
+            );
+        }
 
-      // --- VIEWS ---
-
-      const TarotView = ({ onBack }) => {
-        const [stage, setStage] = useState('intro'); // 'intro' | 'shuffle' | 'select' | 'reveal'
-        const [selectedCards, setSelectedCards] = useState([]);
-        const [loading, setLoading] = useState(false);
-        const [result, setResult] = useState(null);
-
-        const startReading = () => {
-          setStage('shuffle');
-          setTimeout(() => setStage('select'), 2000); 
-        };
-
-        const drawCards = async () => {
-          const deck = [...TAROT_DECK];
-          const drawn = [];
-          const positions = ['Past', 'Present', 'Future'];
-
-          for (let i = 0; i < 3; i++) {
-            const randomIndex = Math.floor(Math.random() * deck.length);
-            const cardName = deck.splice(randomIndex, 1)[0];
-            drawn.push({
-              card: cardName,
-              isUpright: Math.random() > 0.2, 
-              position: positions[i]
-            });
-          }
-
-          setSelectedCards(drawn);
-          setStage('reveal');
-          setLoading(true);
-
-          const context = drawn.map(c => 
-            `${c.position}: ${c.card} (${c.isUpright ? 'Upright' : 'Reversed'})`
-          ).join(', ');
-
-          const reading = await getDivinationReading(DivinationType.TAROT, context);
-          setResult(reading);
-          setLoading(false);
-        };
-
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center w-full max-w-4xl mx-auto px-4">
-            {result && <ResultCard result={result} onClose={() => { setResult(null); onBack(); }} />}
-            
-            {stage === 'intro' && (
-              <div className="animate-fade-in space-y-6">
-                <h2 className="text-4xl font-display text-purple-300">The Tarot of Destiny</h2>
-                <p className="text-slate-400 max-w-lg mx-auto">Focus on a question. The cards will reveal the energies of your past, present, and potential future.</p>
-                <div className="flex gap-4 justify-center">
-                   <Button variant="secondary" onClick={onBack}>Return</Button>
-                   <Button onClick={startReading}>Begin Ritual</Button>
-                </div>
-              </div>
-            )}
-
-            {stage === 'shuffle' && (
-              <div className="flex flex-col items-center">
-                 <div className="relative w-32 h-48">
-                    <div className="absolute inset-0 bg-purple-900 border-2 border-purple-400 rounded-lg animate-pulse transform rotate-3"></div>
-                    <div className="absolute inset-0 bg-purple-900 border-2 border-purple-400 rounded-lg animate-bounce"></div>
-                    <div className="absolute inset-0 bg-purple-900 border-2 border-purple-400 rounded-lg transform -rotate-3"></div>
-                 </div>
-                 <p className="mt-8 text-purple-300 font-display animate-pulse">Shuffling the energies...</p>
-              </div>
-            )}
-
-            {stage === 'select' && (
-              <div className="animate-fade-in space-y-8">
-                 <h3 className="text-2xl font-display text-slate-200">The cards are ready.</h3>
-                 <div className="flex justify-center gap-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="w-24 h-36 bg-gradient-to-br from-purple-900 to-slate-900 border border-purple-500/30 rounded-lg shadow-lg opacity-80" />
-                    ))}
-                 </div>
-                 <Button onClick={drawCards}>Draw 3 Cards</Button>
-              </div>
-            )}
-
-            {stage === 'reveal' && (
-              <div className="w-full space-y-8">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   {selectedCards.map((card, idx) => (
-                     <div key={idx} className="flex flex-col items-center space-y-4 animate-fade-in-up" style={{ animationDelay: `${idx * 200}ms` }}>
-                        <span className="text-sm uppercase tracking-widest text-slate-400 font-bold">{card.position}</span>
-                        <div className={`w-48 h-72 rounded-xl shadow-2xl relative transition-transform duration-700 ${card.isUpright ? '' : 'rotate-180'}`}>
-                          <div className="absolute inset-0 bg-slate-800 border-2 border-purple-400 rounded-xl flex items-center justify-center p-4 overflow-hidden">
-                             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
-                             <h4 className={`text-xl font-display font-bold text-center ${card.isUpright ? 'text-purple-200' : 'text-purple-200 transform rotate-180'}`}>{card.card}</h4>
-                          </div>
-                        </div>
-                        <span className="text-purple-300 text-sm">{card.isUpright ? 'Upright' : 'Reversed'}</span>
-                     </div>
-                   ))}
-                 </div>
-                 {loading && (
-                   <div className="mt-8">
-                      <p className="text-amber-400 animate-pulse font-display text-lg">Consulting the Oracle...</p>
-                   </div>
-                 )}
-              </div>
-            )}
-          </div>
-        );
-      };
-
-      const IChingView = ({ onBack }) => {
-        const [lines, setLines] = useState([]);
-        const [stage, setStage] = useState('intro');
-        const [loading, setLoading] = useState(false);
-        const [result, setResult] = useState(null);
-
-        const tossCoins = () => {
-          let sum = 0;
-          for (let i = 0; i < 3; i++) {
-            sum += Math.random() > 0.5 ? 3 : 2;
-          }
-          return sum;
-        };
-
-        const performToss = () => {
-          if (lines.length >= 6) return;
-
-          const newLine = tossCoins();
-          const newLines = [...lines, newLine];
-          setLines(newLines);
-
-          if (newLines.length === 6) {
-            setStage('complete');
-          }
-        };
-
-        const interpret = async () => {
-          setLoading(true);
-          const context = lines.map((val, idx) => `Line ${idx + 1}: ${val}`).join(', ');
-          const reading = await getDivinationReading(DivinationType.ICHING, context);
-          setResult(reading);
-          setLoading(false);
-        };
-
-        const renderLine = (val, index) => {
-          const isYang = val === 7 || val === 9;
-          const isChanging = val === 6 || val === 9;
-
-          return (
-            <div key={index} className="flex items-center justify-center gap-4 w-full h-8 my-2 animate-fade-in">
-               <span className="text-xs text-slate-500 w-8 text-right">{index + 1}</span>
-               <div className="flex-1 flex justify-center items-center h-full max-w-[200px]">
-                 {isYang ? (
-                   <div className={`h-4 w-full bg-amber-500 rounded-sm relative ${isChanging ? 'animate-pulse' : ''}`}>
-                     {isChanging && <div className="absolute inset-0 flex items-center justify-center text-black font-bold text-xs">O</div>}
-                   </div>
-                 ) : (
-                   <div className="flex gap-4 w-full h-4">
-                      <div className={`h-full w-1/2 bg-amber-500 rounded-sm relative ${isChanging ? 'animate-pulse' : ''}`}>
-                         {isChanging && <div className="absolute inset-0 flex items-center justify-center text-black font-bold text-xs">X</div>}
-                      </div>
-                      <div className={`h-full w-1/2 bg-amber-500 rounded-sm relative ${isChanging ? 'animate-pulse' : ''}`}>
-                         {isChanging && <div className="absolute inset-0 flex items-center justify-center text-black font-bold text-xs">X</div>}
-                      </div>
-                   </div>
-                 )}
-               </div>
-            </div>
-          );
-        };
-
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-2xl mx-auto px-4">
-            {result && <ResultCard result={result} onClose={() => { setResult(null); onBack(); }} />}
-
-            <h2 className="text-4xl font-display text-amber-500 mb-6">The Book of Changes</h2>
-            
-            {stage === 'intro' && (
-              <div className="text-center space-y-6">
-                <p className="text-slate-300">Focus on your inquiry. Toss the coins 6 times to build your Hexagram from the bottom up.</p>
-                <div className="flex gap-4 justify-center">
-                  <Button variant="secondary" onClick={onBack}>Return</Button>
-                  <Button onClick={() => setStage('tossing')}>Start Divination</Button>
-                </div>
-              </div>
-            )}
-
-            {(stage === 'tossing' || stage === 'complete') && (
-              <div className="w-full flex flex-col items-center gap-8">
-                 <div className="w-full flex flex-col-reverse bg-slate-800/50 p-8 rounded-xl border border-amber-900/50 min-h-[300px] justify-center">
-                    {lines.map((val, idx) => renderLine(val, idx))}
-                    {lines.length === 0 && <p className="text-center text-slate-500 italic">The hexagram awaits...</p>}
-                 </div>
-
-                 {stage === 'tossing' && (
-                   <Button onClick={performToss} className="w-48">
-                     Toss Coin ({lines.length + 1}/6)
-                   </Button>
-                 )}
-
-                 {stage === 'complete' && (
-                   <Button onClick={interpret} isLoading={loading} className="w-48">
-                     Read Hexagram
-                   </Button>
-                 )}
-              </div>
-            )}
-          </div>
-        );
-      };
-
-      const AstrologyView = ({ onBack }) => {
-        const [formData, setFormData] = useState({
-          name: '',
-          dob: '',
-          pob: ''
-        });
-        const [loading, setLoading] = useState(false);
-        const [result, setResult] = useState(null);
-
-        const handleSubmit = async (e) => {
-          e.preventDefault();
-          setLoading(true);
-          const context = `Name: ${formData.name}, DOB: ${formData.dob}, Place: ${formData.pob}`;
-          const reading = await getDivinationReading(DivinationType.ASTROLOGY, context);
-          setResult(reading);
-          setLoading(false);
-        };
-
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-xl mx-auto px-4">
-            {result && <ResultCard result={result} onClose={() => { setResult(null); onBack(); }} />}
-
-            <h2 className="text-4xl font-display text-indigo-400 mb-6">Cosmic Alignment</h2>
-            <p className="text-slate-400 mb-8 text-center">Enter your details to generate a transit chart reading for today.</p>
-
-            <form onSubmit={handleSubmit} className="w-full space-y-6 bg-slate-800/50 p-8 rounded-2xl border border-indigo-500/20 shadow-xl">
-              <div>
-                <label className="block text-indigo-200 text-sm font-bold mb-2">Name</label>
-                <input 
-                  type="text" 
-                  required
-                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition-colors"
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-indigo-200 text-sm font-bold mb-2">Date of Birth</label>
-                <input 
-                  type="date" 
-                  required
-                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition-colors"
-                  value={formData.dob}
-                  onChange={e => setFormData({...formData, dob: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="block text-indigo-200 text-sm font-bold mb-2">Place of Birth (City, Country)</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="e.g., London, UK"
-                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition-colors"
-                  value={formData.pob}
-                  onChange={e => setFormData({...formData, pob: e.target.value})}
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                 <Button type="button" variant="secondary" onClick={onBack} className="flex-1">Back</Button>
-                 <Button type="submit" isLoading={loading} className="flex-1 bg-indigo-600 hover:bg-indigo-500">Align Stars</Button>
-              </div>
-            </form>
-          </div>
-        );
-      };
-
-      const RunesView = ({ onBack }) => {
-        const [loading, setLoading] = useState(false);
-        const [result, setResult] = useState(null);
-        const [selectedRune, setSelectedRune] = useState(null);
-
-        const castRune = async () => {
-          setLoading(true);
-          const rune = RUNE_NAMES[Math.floor(Math.random() * RUNE_NAMES.length)];
-          setSelectedRune(rune);
-          
-          await new Promise(r => setTimeout(r, 1000));
-          
-          const reading = await getDivinationReading(DivinationType.RUNES, rune);
-          setResult(reading);
-          setLoading(false);
-        };
-
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center w-full max-w-2xl mx-auto px-4">
-            {result && <ResultCard result={result} onClose={() => { setResult(null); setSelectedRune(null); onBack(); }} />}
-
-            <h2 className="text-4xl font-display text-stone-300 mb-2">Whispers of Odin</h2>
-            <p className="text-stone-500 mb-12">Cast the stones into the well of wisdom.</p>
-
-            {!loading && !selectedRune ? (
-              <div className="relative group cursor-pointer" onClick={castRune}>
-                  <div className="absolute inset-0 bg-stone-700 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
-                  <div className="w-48 h-48 bg-stone-800 rounded-full border-4 border-stone-600 flex items-center justify-center shadow-2xl group-hover:scale-105 transition-transform">
-                      <span className="text-stone-500 text-lg font-display">Cast Rune</span>
-                  </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center animate-fade-in">
-                 <div className="w-48 h-48 bg-stone-200 text-stone-900 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.2)] mb-8">
-                     <span className="text-2xl font-bold font-display px-4 text-center">
-                       {selectedRune || "..."}
-                     </span>
-                 </div>
-                 <p className="text-stone-400 animate-pulse">Interpreting ancient symbols...</p>
-              </div>
-            )}
-
-            {!loading && !selectedRune && (
-               <div className="mt-12">
-                 <Button variant="secondary" onClick={onBack}>Return to Sanctuary</Button>
-               </div>
-            )}
-          </div>
-        );
-      };
-
-      // --- APP ---
-
-      function App() {
-        const [currentView, setCurrentView] = useState(null);
-
-        const renderView = () => {
-          switch (currentView) {
-            case DivinationType.TAROT:
-              return <TarotView onBack={() => setCurrentView(null)} />;
-            case DivinationType.ICHING:
-              return <IChingView onBack={() => setCurrentView(null)} />;
-            case DivinationType.ASTROLOGY:
-              return <AstrologyView onBack={() => setCurrentView(null)} />;
-            case DivinationType.RUNES:
-              return <RunesView onBack={() => setCurrentView(null)} />;
-            default:
-              return renderHome();
-          }
-        };
-
-        const renderHome = () => (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="text-center mb-16">
-              <h1 className="text-5xl md:text-7xl font-display text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-200 to-amber-200 mb-4 animate-fade-in">
-                Omni Divination
-              </h1>
-              <p className="text-xl text-slate-400 max-w-2xl mx-auto font-light">
-                Seek guidance from ancient wisdoms. Choose your path to clarity through the lens of global traditions, powered by modern intelligence.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {METHODS.map((method) => (
-                <button
-                  key={method.id}
-                  onClick={() => setCurrentView(method.id)}
-                  className="group relative h-96 w-full perspective-1000 focus:outline-none"
-                >
-                  <div className="absolute inset-0 bg-slate-800/50 rounded-2xl transform transition-transform duration-500 group-hover:scale-[1.02] border border-slate-700 group-hover:border-amber-500/50 overflow-hidden shadow-2xl">
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${method.color}`} />
-                    
-                    <div className="absolute -right-12 -top-12 opacity-10 group-hover:opacity-20 transition-all duration-700 group-hover:rotate-12">
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-48 h-48 text-white">
-                        <path d={method.icon} />
-                      </svg>
-                    </div>
-
-                    <div className="absolute inset-0 p-8 flex flex-col justify-end text-left z-10">
-                      <div className={`w-12 h-12 rounded-full ${method.color} bg-opacity-20 flex items-center justify-center mb-6 border border-white/10`}>
-                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-white">
-                            <path d={method.icon} />
-                         </svg>
-                      </div>
-                      <h3 className="text-2xl font-display font-bold text-slate-100 mb-2 group-hover:text-amber-300 transition-colors">
-                        {method.name}
-                      </h3>
-                      <p className="text-slate-400 text-sm leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                        {method.description}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            
-            <footer className="mt-24 text-center text-slate-600 text-sm">
-              <p>© 2024 OmniDivination. Powered by Gemini AI. For entertainment purposes only.</p>
-            </footer>
-          </div>
-        );
-
-        return (
-          <div className="min-h-screen mystic-gradient overflow-x-hidden selection:bg-amber-500/30">
-            <div className="fixed inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
-            {renderView()}
-          </div>
-        );
-      }
-
-      // --- MOUNT ---
-      
-      const rootElement = document.getElementById('root');
-      if (!rootElement) {
-        throw new Error("Could not find root element to mount to");
-      }
-
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
-      );
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
-  </body>
+</body>
 </html>
